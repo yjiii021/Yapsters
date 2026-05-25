@@ -1,22 +1,27 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Yapster real-time chat API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: users
+  - name: conversations
+  - name: messages
+  - name: groups
+  - name: settings
+  - name: upload
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +29,1169 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Users
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me/profile:
+    patch:
+      operationId: updateProfile
+      tags: [users]
+      summary: Update own profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/me/password:
+    patch:
+      operationId: changePassword
+      tags: [users]
+      summary: Change password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChange"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Invalid current password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me/status:
+    patch:
+      operationId: updateStatus
+      tags: [users]
+      summary: Update online status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+
+  # Conversations (DMs)
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List conversations for current user
+      responses:
+        "200":
+          description: Conversations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Create or get DM conversation with another user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "200":
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{conversationId}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+    delete:
+      operationId: deleteConversation
+      tags: [conversations]
+      summary: Delete a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /conversations/{conversationId}/pin:
+    patch:
+      operationId: pinConversation
+      tags: [conversations]
+      summary: Pin or unpin a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PinToggle"
+      responses:
+        "200":
+          description: Updated conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{conversationId}/archive:
+    patch:
+      operationId: archiveConversation
+      tags: [conversations]
+      summary: Archive or unarchive a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveToggle"
+      responses:
+        "200":
+          description: Updated conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{conversationId}/theme:
+    patch:
+      operationId: setConversationTheme
+      tags: [conversations]
+      summary: Set custom theme for a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThemeUpdate"
+      responses:
+        "200":
+          description: Updated conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{conversationId}/read:
+    post:
+      operationId: markConversationRead
+      tags: [conversations]
+      summary: Mark all messages in conversation as read
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # Messages
+  /conversations/{conversationId}/messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List messages in a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /conversations/{conversationId}/messages/{messageId}:
+    delete:
+      operationId: deleteMessage
+      tags: [messages]
+      summary: Delete a message
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /conversations/{conversationId}/messages/{messageId}/react:
+    post:
+      operationId: reactToMessage
+      tags: [messages]
+      summary: Add or remove a reaction to a message
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactionInput"
+      responses:
+        "200":
+          description: Updated message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /conversations/{conversationId}/messages/{messageId}/pin:
+    patch:
+      operationId: pinMessage
+      tags: [messages]
+      summary: Pin or unpin a message
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PinToggle"
+      responses:
+        "200":
+          description: Updated message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /conversations/{conversationId}/pinned:
+    get:
+      operationId: listPinnedMessages
+      tags: [messages]
+      summary: List pinned messages in a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pinned messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+  # Groups
+  /groups:
+    get:
+      operationId: listGroups
+      tags: [groups]
+      summary: List groups for current user
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+    post:
+      operationId: createGroup
+      tags: [groups]
+      summary: Create a new group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupInput"
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/{groupId}:
+    get:
+      operationId: getGroup
+      tags: [groups]
+      summary: Get group details
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+    patch:
+      operationId: updateGroup
+      tags: [groups]
+      summary: Update group info
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUpdate"
+      responses:
+        "200":
+          description: Updated group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/{groupId}/members:
+    post:
+      operationId: addGroupMember
+      tags: [groups]
+      summary: Add a member to a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupMemberInput"
+      responses:
+        "200":
+          description: Updated group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/{groupId}/members/{userId}:
+    delete:
+      operationId: removeGroupMember
+      tags: [groups]
+      summary: Remove a member from a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/{groupId}/leave:
+    post:
+      operationId: leaveGroup
+      tags: [groups]
+      summary: Leave a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # Group Messages
+  /groups/{groupId}/messages:
+    get:
+      operationId: listGroupMessages
+      tags: [groups]
+      summary: List messages in a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendGroupMessage
+      tags: [groups]
+      summary: Send a message in a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /groups/{groupId}/messages/{messageId}:
+    delete:
+      operationId: deleteGroupMessage
+      tags: [groups]
+      summary: Delete a group message
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /groups/{groupId}/messages/{messageId}/react:
+    post:
+      operationId: reactToGroupMessage
+      tags: [groups]
+      summary: React to a group message
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactionInput"
+      responses:
+        "200":
+          description: Updated message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /groups/{groupId}/messages/{messageId}/pin:
+    patch:
+      operationId: pinGroupMessage
+      tags: [groups]
+      summary: Pin or unpin a group message
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PinToggle"
+      responses:
+        "200":
+          description: Updated message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /groups/{groupId}/pinned:
+    get:
+      operationId: listGroupPinnedMessages
+      tags: [groups]
+      summary: List pinned messages in a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pinned messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+  /groups/{groupId}/read:
+    post:
+      operationId: markGroupRead
+      tags: [groups]
+      summary: Mark all messages in group as read
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # Settings
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get current user settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    # Auth
+    RegisterInput:
+      type: object
+      required: [email, password, displayName, username]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+        username:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    # Users
+    User:
+      type: object
+      required: [id, email, displayName, username, isOnline, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        displayName:
+          type: string
+        username:
+          type: string
+        bio:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        isOnline:
+          type: boolean
+        lastSeen:
+          type: ["string", "null"]
+        showOnlineStatus:
+          type: boolean
+        showLastSeen:
+          type: string
+        createdAt:
+          type: string
+
+    ProfileUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+
+    PasswordChange:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+
+    StatusUpdate:
+      type: object
+      required: [isOnline]
+      properties:
+        isOnline:
+          type: boolean
+
+    UploadResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    # Conversations
+    Conversation:
+      type: object
+      required: [id, type, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        otherUser:
+          $ref: "#/components/schemas/User"
+        lastMessage:
+          $ref: "#/components/schemas/Message"
+        unreadCount:
+          type: integer
+        isPinned:
+          type: boolean
+        isArchived:
+          type: boolean
+        theme:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ConversationInput:
+      type: object
+      required: [otherUserId]
+      properties:
+        otherUserId:
+          type: integer
+
+    PinToggle:
+      type: object
+      required: [pinned]
+      properties:
+        pinned:
+          type: boolean
+
+    ArchiveToggle:
+      type: object
+      required: [archived]
+      properties:
+        archived:
+          type: boolean
+
+    ThemeUpdate:
+      type: object
+      required: [theme]
+      properties:
+        theme:
+          type: ["string", "null"]
+
+    # Messages
+    Message:
+      type: object
+      required: [id, senderId, content, type, createdAt]
+      properties:
+        id:
+          type: integer
+        senderId:
+          type: integer
+        sender:
+          $ref: "#/components/schemas/User"
+        content:
+          type: ["string", "null"]
+        type:
+          type: string
+        mediaUrl:
+          type: ["string", "null"]
+        replyToId:
+          type: ["integer", "null"]
+        replyTo:
+          $ref: "#/components/schemas/Message"
+        reactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageReaction"
+        readBy:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        isPinned:
+          type: boolean
+        isDeleted:
+          type: boolean
+        createdAt:
+          type: string
+
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+        type:
+          type: string
+        mediaUrl:
+          type: string
+        replyToId:
+          type: integer
+
+    MessageReaction:
+      type: object
+      required: [emoji, userId]
+      properties:
+        emoji:
+          type: string
+        userId:
+          type: integer
+        user:
+          $ref: "#/components/schemas/User"
+
+    ReactionInput:
+      type: object
+      required: [emoji]
+      properties:
+        emoji:
+          type: string
+
+    # Groups
+    Group:
+      type: object
+      required: [id, name, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        createdById:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMember"
+        lastMessage:
+          $ref: "#/components/schemas/Message"
+        unreadCount:
+          type: integer
+        isPinned:
+          type: boolean
+        isArchived:
+          type: boolean
+        theme:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    GroupMember:
+      type: object
+      required: [userId, role]
+      properties:
+        userId:
+          type: integer
+        user:
+          $ref: "#/components/schemas/User"
+        role:
+          type: string
+
+    GroupInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        avatarUrl:
+          type: string
+        memberIds:
+          type: array
+          items:
+            type: integer
+
+    GroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        avatarUrl:
+          type: string
+
+    GroupMemberInput:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+
+    # Settings
+    Settings:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: integer
+        showOnlineStatus:
+          type: boolean
+        showLastSeen:
+          type: string
+        showReadReceipts:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        darkMode:
+          type: boolean
+
+    SettingsUpdate:
+      type: object
+      properties:
+        showOnlineStatus:
+          type: boolean
+        showLastSeen:
+          type: string
+        showReadReceipts:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        darkMode:
+          type: boolean

@@ -1,0 +1,123 @@
+Build a full-stack real-time chat web app called Yapster. Below are all the required features:
+
+---
+
+## Auth
+- User registration and login with email and password
+- Password hashing with bcrypt
+- JWT authentication stored in localStorage
+
+---
+
+## User profile
+- Profile pictures with circle avatar upload and image preview
+- Display name, username, and bio on user profiles
+- Edit profile including name and bio
+- Change password from profile page
+- See a list of all registered users
+- Click any user from the list to start a private chat with them
+
+---
+
+## Status & presence
+- Online and offline status indicator
+- Active now display in chat header
+- Last seen timestamp in chat header
+- Privacy toggle to show or hide online status
+- Last seen privacy option between Everyone and Nobody
+
+---
+
+## Messaging
+- Real-time private messaging between users
+- Real-time group chats
+- Send and receive instant text messages
+- Send image messages via file attachment
+- Voice memo button in input bar
+- Message timestamps grouped by cluster
+- Date dividers between message groups showing Today, Yesterday, or the actual date
+- Seen and read receipts showing a small avatar of the reader
+- Typing indicator with three animated bouncing dots
+- Emoji picker with a grid of common Unicode emojis
+- Reply to messages with a quote
+- Delete messages
+- Message reactions with emoji
+- Pin important messages so they stay visible at the top of the chat
+
+---
+
+## Group chats
+- Create group chat with name and avatar
+- Add members to group chats
+- Remove or kick members from group chats by admins
+- Send and receive real-time group messages
+- Rename group chats inline
+- Group profile pictures
+- Group info panel showing members with admin badges
+- Leave group with confirmation dialog
+
+---
+
+## Sidebar & conversations
+- Search conversations in the sidebar with live filtering
+- Pin conversations so they appear at the top
+- Archive conversations with a collapsible archived section
+- Delete conversations
+- Unread message count badges on conversation cards
+- Online dot indicator on conversation cards
+- Tab toggle in sidebar between Chats and Groups
+
+---
+
+## Notifications
+- Browser push notifications when a new message arrives and the tab is not in focus
+- Reconnecting banner when the user goes offline
+- Notification settings to enable or disable push notifications
+
+---
+
+## Settings
+- Privacy settings for last seen and read receipts
+- Account settings for changing email and password
+- Dark mode and light mode toggle that applies instantly without a theme flash
+- Custom chat themes per conversation so users can personalize their chat background
+- Default accent color is pink throughout the entire app
+
+---
+
+## Layout & UX
+- Responsive mobile layout where sidebar and chat alternate
+- Back button on mobile to return from chat to sidebar
+- Empty states throughout the site with friendly messages
+
+---
+
+## Security & validation
+- Input sanitization to prevent cross-site scripting
+- Server-side validation: if the email is already registered, return a clear error
+  message immediately so the user knows that email is already in use and cannot
+  be registered again
+- Client-side validation: highlight and notify the user of any empty or missed
+  fields in the registration form before the form is submitted
+
+---
+
+## Quality & reliability
+- Every feature must be fully functional with zero bugs before moving to the next
+- Test each feature thoroughly after building it
+- All real-time features must be stable and not cause race conditions or duplicate events
+- No silent failures: every error must surface a clear and visible message to the user
+- All UI elements must be consistently visible and never disappear, collapse, or
+  break on any screen size
+- No data should ever be lost, duplicated, or corrupted under any condition
+- All edge cases must be handled gracefully including empty inputs, network drops,
+  and invalid data
+
+---
+
+## Important
+- Do not modify, override, or interfere with any existing publish settings,
+  deployment configurations, environment variables, or infrastructure setup
+- Do not change .replit, replit.nix, or any config files unless explicitly told to
+- Do not touch any file outside the scope of the features listed above
+- Ask before making any structural or config-level changes
